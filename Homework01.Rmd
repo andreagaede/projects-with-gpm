@@ -1,0 +1,128 @@
+---
+title: "Hw01"
+author: "Dre"
+date: "September 24, 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+library(gapminder)
+library(tidyverse)
+```
+# as_tibble() to view data as tibble if it wasn't made a tibble
+```{r}
+gapminder
+str(gapminder)
+glimpse(gapminder)
+head(gapminder)
+tail(gapminder)
+```
+
+# ctrl + alt + i to insert chunk
+
+```{r}
+(canada <- filter(gapminder, country == "canada"))
+filter(gapminder, year>2000)
+filter(gapminder, continent == "Europe", year == 2007)
+filter(gapminder, country == "Bulgaria" | year == 2007)
+filter(gapminder, country == "Bulgaria" | country == "Albania")
+filter(gapminder, country %in% c("Bulgaria", "Albania"))
+select(gapminder, year, lifeExp)
+select(
+  filter(gapminder, year, lifeExp, country), 
+country =="Canada"
+) 
+
+```
+```{r}
+# cmd shift m gives %>%
+# pipe always goes on the right of the command (end of the line)
+
+gapminder %>% 
+  filter(country == "Canada") %>% 
+  select(year, lifeExp)
+
+gapminder %>% 
+  select(year, lifeExp, country) %>% 
+  filter(country == "Canada") %>% 
+  select(-country)
+
+select(
+  filter(gapminder, year, lifeExp, country), 
+country =="Canada") 
+
+y <- gapminder %>% 
+  select(starts_with("co"))
+
+```
+
+Let's look at some functions to get to know a data frame.
+
+```{r}
+names(gapminder)
+colnames(gapminder)
+ncol(gapminder)
+length(gapminder)
+dim(gapminder)
+nrow(gapminder)
+```
+
+Shift from describing the whole object to looking at the variables inside.
+
+```{r}
+summary(gapminder)
+# main way to get one variable
+gapminder$lifeExp
+
+# Another way to get one variable
+gapminder[["gdpPercap"]]
+
+
+
+str(gapminder$lifeExp)
+str(gapminder["lifeExp"])
+
+```
+
+Now we know how to get 1 variable. Let's explore single variables.
+
+```{r}
+summary(gapminder$continent)
+table(gapminder$continent)
+class(gapminder$continent)
+levels(gapminder$continent)
+nlevels(gapminder$continent)
+barplot(table(gapminder$continent))
+summary(gapminder$lifeExp)
+quantile(gapminder$lifeExp)
+mean(gapminder$lifeExp)
+median(gapminder$lifeExp)
+hist(gapminder$lifeExp)
+```
+
+Let's make a few figures.
+
+```{r}
+## library(ggplot2)
+
+ggplot(gapminder, aes(x = gdpPercap, y = lifeExp)) +
+  geom_point()
+
+
+## can also pipe data in:
+gapminder %>% 
+  #filter(country == "Canada") %>% 
+  ggplot(aes(x = gdpPercap, y = lifeExp)) +
+  geom_point()
+
+p <- ggplot(gapminder, aes(x = gdpPercap, y = lifeExp))
+## p + geom_point()
+p + geom_point(aes(color = continent))
+```
+
+ 
