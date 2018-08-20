@@ -1,0 +1,226 @@
+---
+title: "Homework 04"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(gapminder)
+```
+
+```{r}
+str(gapminder)
+my_data <- gapminder
+
+
+## Need year, country, life expectancy for 2 countries
+my_cameroon <- my_data %>% 
+  filter(country == 'Cameroon') %>% 
+  select(year, lifeExp) %>% 
+  rename(lifeExp_cameroon = lifeExp)
+  
+my_france <- my_data %>% 
+  filter(country == 'France')%>% 
+  select(year, lifeExp)%>% 
+  rename(lifeExp_france = lifeExp)
+
+new_table <- left_join(my_cameroon, my_france, by = "year")
+
+knitr::kable(new_table)
+
+p <- ggplot(new_table, aes(x = lifeExp_cameroon, y = lifeExp_france))
+p + geom_point()
+
+
+## do this using spread instead
+
+my_data_spread <- gapminder %>% 
+  filter(country == "Cameroon" | country == "France") %>% 
+  select(year, country, lifeExp) %>% 
+  spread(key = "country", value = "lifeExp")
+
+knitr::kable(my_data_spread)
+
+p <- ggplot(my_data_spread, aes(x = Cameroon, y = France, label = year, color = year))
+p + geom_point() +
+  geom_text(check_overlap = TRUE, nudge_y = 0.5)
+
+
+  
+```
+
+Activity #3
+Compute mean life expectancy for all combinations of continent and year. Reshape to have one row per year and one variable for each continent.
+```{r}
+my_data2 <- my_data %>% 
+  group_by(continent, year) %>% 
+  summarise(mean_life_exp = mean(lifeExp))
+
+p2 <- ggplot(my_data2, aes(x = year, y = mean_life_exp))
+p2 + geom_point(aes(color = continent)) 
+
+p2 + geom_point(aes(color = continent)) +
+  facet_wrap(~continent)
+
+my_data2_table <- my_data2 %>% 
+  spread(key = continent, value = mean_life_exp)
+
+knitr::kable(my_data2_table)
+```
+
+Join, Merge, Lookup
+
+Activity 2: Make your own cheatsheet
+
+```{r}
+## Make 3 data frames
+
+imdb <- "
+                          movie,      director,              studio,     budget,    genre, country
+                     Fight Club, David Fincher,                 Fox,   63000000,     drama,   USA
+One Flew Over the Cuckoo's Nest,  Milos Forman,       Fantasy Films,    4400000,     drama,   USA
+                  The Searchers,     John Ford,         Warner Bros,    3750000, adventure,   USA
+             American History X,     Tony Kaye,     New Line Cinema,    7500000,     crime,   USA
+             The Maltese Falcon,   John Huston,         Warner Bros,     375000,   mystery,   USA
+                Cinema Paradiso, Giuseppe Tornatore,  Cristaldifilm,    5000000,     drama, Italy
+               Django Unchained, Quentin Tarantino,       Weinstein, 100000000,  western,   USA
+              Princess Mononoke, Hayao Miyazaki,             DENTSU,   23151960, adventure, Japan
+                   Citizen Kane,   Orson Welles, RKO Radio Pictures,     839727,   mystery,   USA
+                        Amadeus,  Milos Forman,                AMLF,   18000000,   biography,   USA
+          To Kill a Mockingbird, Robert Mulligan, Universal International, 2000000, crime, USA
+                           Room, Lenny Abrahamson,  Element Pictures,  13000000,     drama, Ireland
+                      True Grit, Coen brothers,   Paramount Pictures,   38000000,   western,   USA
+                       Deadpool,    Tim Miller,                  Fox,  58000000,    comedy,   USA
+             The Imitation Game, Morten Tyldum,  Black Bear Pictures,  14000000, biography, UK
+                   Donnie Darko, Richard Kelly,       Pandora Cinema,   4500000, drama, USA
+                The Truman Show, Peter Weir,      Paramount Pictures,  60000000, comedy, USA
+                         Ip Man, Wilson Yip,  Beijing ShengShi HuaRei, 11715578, biography, HK
+                         Gandhi, Richard Attenborough,  International Film Investors, 22000000, biography, UK
+    The Cabinet of Dr. Caligari, Robert Wiene, Decla-Bioscop AG, 18000, fantasy, Germany
+               The way way back,  Nat Faxon, Sycamore Pictures, 5000000, comedy, USA
+                       Clueless, Amy Heckerling,  Paramount Pictures, 12000000, comedy, USA
+"
+
+imdb <- read_csv(imdb, trim_ws = TRUE, skip = 1)
+
+knitr::kable(imdb)
+
+viewed <- "
+                          movie,  seen, year_released
+                     Fight Club,  TRUE, 1999
+One Flew Over the Cuckoo's Nest,  TRUE, 1975
+                  The Searchers,  TRUE, 1956
+             American History X,  TRUE, 1998
+             The Maltese Falcon, FALSE, 1941
+                Cinema Paradiso,  TRUE, 1988
+               Django Unchained,  TRUE, 2012
+              Princess Mononoke,  TRUE, 1997
+                   Citizen Kane,  TRUE, 1941
+                        Amadeus,  TRUE, 1984
+          To Kill a Mockingbird,  TRUE, 1962
+                           Room, FALSE, 2015
+                      True Grit,  TRUE, 2010
+                       Deadpool,  TRUE, 2016
+             The Imitation Game,  TRUE, 2014
+                   Donnie Darko, FALSE, 2001
+                The Truman Show,  TRUE, 1998
+                         Ip Man, FALSE, 2008
+                         Gandhi, FALSE, 1982
+    The Cabinet of Dr. Caligari,  TRUE, 1920
+               The way way back,  TRUE, 2013
+                       Clueless,  TRUE, 1995
+"
+viewed <- read_csv(viewed, trim_ws = TRUE, skip = 1)
+
+knitr::kable(viewed)
+
+studios <- "
+        studio, year_est
+Weinstein, 2005
+Universal International, NA
+Universal, 1912
+Fox, 1935
+Paramount Pictures, 1912
+Element Pictures, NA
+Enoki Films, 1975
+Dreamworks, 1994
+"
+studios <- read_csv(studios, trim_ws = TRUE, skip = 1)
+
+knitr::kable(studios)
+
+```
+
+inner_join(x, y): Return all rows from x where there are matching values in y, and all columns from x and y. This is a mutating join
+```{r}
+ij_is <- inner_join(imdb, studios)
+ij_si <- inner_join(studios, imdb)
+
+knitr::kable(ij_is)
+knitr::kable(ij_si)
+
+
+ij_iv <- inner_join(imdb, viewed)
+knitr::kable(ij_iv)
+
+```
+
+
+semi_join(x, y): Return all rows from x where there are matching values in y, keeping just columns from x. A semi join differs from an inner join because an inner join will return one row of x for each matching row of y, where a semi join will never duplicate rows of x. This is a filtering join.
+```{r}
+## only returns movies made by a studio that is in the studio table
+sj_is <- semi_join(imdb, studios)
+knitr::kable(sj_is)
+
+## only returns studios that also made a film in the imdb table
+sj_si <- semi_join(studios, imdb)
+knitr::kable(sj_si)
+```
+
+
+left_join(x, y): Return all rows from x, and all columns from x and y. If there are multiple matches between x and y, all combination of the matches are returned. This is a mutating join.
+```{r}
+## returns all rows from "movie" in imdb and all columns from imdb and viewed
+lj_iv <- left_join(imdb, viewed)
+knitr::kable(lj_iv)
+
+## returns all rows from "movie" in viewed and all columns from imdb and viewed
+lj_vi <- left_join(viewed, imdb)
+knitr::kable(lj_vi)
+
+## returns all rows from "studio" in imdb and all columns from imdb and studios
+lj_is <- left_join(imdb, studios)
+knitr::kable(lj_is)
+
+## returns all rows from "studio" in studios (including every instance that it appears in imdb) and all columns from imdb and studios
+lj_si <- left_join(studios, imdb)
+knitr::kable(lj_si)
+
+```
+
+
+anti_join(x, y): Return all rows from x where there are not matching values in y, keeping just columns from x. This is a filtering join.
+```{r}
+## returns all rows from "studio" in imdb that do not appear in studios table. Only keeps columns from imdb
+aj_is <- anti_join(imdb, studios)
+
+## returns all rows from "studio" in studios that do not appear in imdb table. Only keeps columns from studios
+aj_si <- anti_join(studios, imdb)
+knitr::kable(aj_si)
+```
+
+Full join
+full_join(x, y): Return all rows and all columns from both x and y. Where there are not matching values, returns NA for the one missing. This is a mutating join.
+```{r}
+fj_is <- full_join(imdb, studios)
+knitr::kable(fj_is)
+
+fj_iv <- full_join(imdb, viewed)
+```
+
+I made these data frames with different classes of data (logical, integer, character) so that I can play around with graphing and manipulating objects later. In hindsight, I think I should make another data frame with less overlap, and fewer rows, so that the cheatsheet is more functional. I just really like movies, so it was hard to stop adding to the list ;)
+

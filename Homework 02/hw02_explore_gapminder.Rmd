@@ -1,0 +1,105 @@
+---
+title: "Homework 2"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(gapminder)
+library(tidyverse)
+```
+
+Smell test the data
+
+Explore the gapminder object:
+```{r}
+str(gapminder)
+summary(gapminder)
+names(gapminder)
+summary(gapminder$country)
+
+nrow(gapminder)
+ncol(gapminder)
+dim(gapminder)
+length(gapminder)
+
+```
+
+Explore individual variables:
+```{r}
+class(gapminder$country)
+class(gapminder$lifeExp)
+
+max(gapminder$lifeExp)
+min(gapminder$lifeExp)
+hist(gapminder$lifeExp)
+p <- ggplot(gapminder, aes(x = continent, y = lifeExp)) 
+p + geom_point(aes(alpha = 1/5, size = 3))
+p + geom_jitter(aes(alpha = 1/5))
+p + geom_jitter(position = position_jitter(width = 0.3, height = 0), alpha = 1/5)
+
+table(gapminder$year)
+table(gapminder$continent)
+barplot(table(gapminder$continent))
+
+ggplot(gapminder, aes(x = continent)) +
+  geom_bar()
+```
+
+Explore various plot types:
+```{r}
+
+plot(lifeExp ~ log(gdpPercap), gapminder)
+ggplot(gapminder, aes(x = gdpPercap, y = lifeExp)) +
+  scale_x_log10() +
+  geom_point(aes(color = continent, alpha = 1/3)) +
+  geom_smooth()
+
+p <- ggplot(gapminder, aes(x = year, y = gdpPercap)) 
+p +
+  geom_jitter(position = position_jitter(width = 0.5, height = 0), alpha = 1/5, aes(color = continent)) +
+  geom_smooth(aes(color = continent))
+  
+p +
+  scale_y_log10() +
+  geom_point(alpha = 1/3) +
+  facet_wrap( ~ continent) +
+  geom_smooth(aes(color = continent))
+
+p <- ggplot(gapminder, aes(x = gdpPercap, y = lifeExp))
+p <- p +scale_x_log10()
+p + geom_point(aes(color = continent))
+p + geom_point(aes(color = continent), alpha = 1/3, size = 3) + facet_wrap(~continent) + geom_smooth(lwd = 1.5, se = FALSE)
+
+## Density plot
+p <- ggplot(gapminder, aes(x = gdpPercap, fill = continent)) + scale_x_log10()
+p +
+  geom_density(alpha = 0.3)
+
+## one quantitative and one categorical variable
+p <- ggplot(gapminder, aes(x = continent, y = pop)) + scale_y_log10()
+p +
+  geom_boxplot(outlier.color = "orange") +
+  geom_jitter(position = position_jitter(width = 0.5, height = 0), alpha = 1/5)
+```
+
+
+```{r}
+france.aus <- gapminder %>% 
+  select(year, lifeExp, country, gdpPercap) %>% 
+  filter(country == "France" | country == "Australia")
+
+ggplot(france.aus, aes(x = country, y = gdpPercap)) +
+  geom_boxplot(outlier.colour = "purple") +
+  geom_point(aes(alpha = 1/3, size = 3))
+
+ggplot(france.aus, aes(x = year, y = gdpPercap)) +
+  geom_point(aes(color = country, alpha = 1/3, size = 3))
+
+
+
+```
+

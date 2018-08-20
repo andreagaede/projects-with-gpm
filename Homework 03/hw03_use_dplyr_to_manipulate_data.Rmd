@@ -1,0 +1,119 @@
+---
+title: "Homework 03: Use dplyr to manipulate and explore data"
+author: "Dre"
+date: "October 1, 2016"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(gapminder)
+library(tidyverse)
+library(RColorBrewer)
+```
+
+```{r}
+summary(gapminder)
+## str(gapminder)
+## glimpse(gapminder)
+
+```
+
+Get the maximum and minimum GDP per capita for each continent
+```{r}
+## remname gapminder data frame
+my_data <- gapminder
+
+## Get the maximum and minimum GDP per capita for each continent
+## Telling R that you want to group the data by levels of a factor (in this case continent)
+## Feed that into the summarize command where you create 2 new variables that provide the max or min of
+## gdpPercap within a given group (continent), and then combines the results into a new tibble 
+## gdp_per_cap_summary
+
+gdp_percap_summary <- my_data %>% 
+  group_by(continent) %>%
+  summarize(max_gdp_percap = max(gdpPercap), min_gdp_percap = min(gdpPercap))
+
+knitr::kable(gdp_percap_summary)
+
+gdp_summary1 <- data.frame(gdp_percap_summary$continent, gdp_percap_summary$max_gdp_percap)
+gdp_summary2 <- data.frame(gdp_percap_summary$continent, gdp_percap_summary$min_gdp_percap)
+gdp_summary1 <- gdp_summary1 %>% 
+  mutate(stat_done = rep(c("max"),nrow(gdp_percap_summary))) %>% 
+  rename(continent = gdp_percap_summary.continent,
+         gdp_percap = gdp_percap_summary.max_gdp_percap)
+
+gdp_summary2 <- gdp_summary2 %>%
+  mutate(stat_done = rep(c("min"),nrow(gdp_percap_summary))) %>% 
+  rename(continent = gdp_percap_summary.continent,
+         gdp_percap = gdp_percap_summary.min_gdp_percap)
+
+gdp_percap_graph <- rbind(gdp_summary1, gdp_summary2)
+gdp_percap_graph$stat_done <- as.factor(gdp_percap_graph$stat_done)
+
+gdp_percap_graph %>% 
+  as_tibble()
+
+## rearranged tibble so it now looks like this:
+knitr::kable(gdp_percap_graph)
+
+f_colors = c("deepskyblue", "deepskyblue4")
+names(f_colors) <- levels(gdp_percap_graph$stat_done)
+
+p <- ggplot(gdp_percap_graph, aes(x = continent, y = gdp_percap, fill = stat_done)) + scale_y_log10()
+p + geom_bar(stat = "identity", position=position_dodge()) + 
+  scale_fill_manual(values = f_colors)
+
+
+## Looking at the data differently
+p <- ggplot(gdp_percap_graph, aes(x = stat_done, y = gdp_percap, group = continent, color = continent)) + scale_y_log10()
+p + geom_line(size = 1) + geom_point(aes(color = continent))
+
+p + geom_line(size = 1) + geom_point(aes(color = continent)) +
+  facet_wrap(~continent)
+
+
+```
+
+Look at the spread of GDP per capita for all continents 
+```{r}
+gdp_by_continent <- my_data %>% 
+  group_by(continent, country) %>% 
+  summarise(mean_gdp = mean(gdpPercap), sd_gdp = sd(gdpPercap))
+
+knitr::kable(gdp_by_continent)
+
+ggplot(gdp_by_continent, aes(x = continent, y = mean_gdp, color = continent)) + scale_y_log10() +
+  geom_boxplot(outlier.colour = "black") +
+  geom_jitter(position = position_jitter(width = 0.3, height = 0), alpha = 1/3, size = 2)
+
+gdp_spread_continent <- my_data %>% 
+  group_by(continent) %>% 
+  summarise(mean_gdp = mean(gdpPercap), sd_gdp = sd(gdpPercap), max_gdp = max(gdpPercap), min_gdp = min(gdpPercap))
+
+knitr::kable(gdp_spread_continent)
+
+```
+
+How is life expectancy changing over time on different continents?
+```{r}
+life_exp_by_continent <- my_data %>% 
+  group_by(continent, year) %>% 
+  summarize(mean_life_exp = mean(lifeExp))
+  
+knitr::kable(life_exp_by_continent)
+
+p <- ggplot(life_exp_by_continent, aes(x = year, y = mean_life_exp, color = continent)) 
+p + geom_point() +
+  geom_smooth()
+
+p + geom_point() +
+  geom_smooth() + 
+  facet_wrap(~continent) 
+
+```
+
+I used a lot of the online material linked to through the course website and the R cheatsheets to help remind me which commands would do what I was trying to achieve. I wish I had more time to make more interesting graphs.

@@ -1,0 +1,209 @@
+---
+title: "Homework 05"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Load packages:
+```{r}
+library(tidyverse)
+library(forcats)
+library(gapminder)
+```
+
+# Factor management:
+## Drop Oceania.
+```{r}
+## Explore gapminder factor continent
+str(gapminder)
+str(gapminder$continent)
+levels(gapminder$continent)
+nlevels(gapminder$continent)
+fct_count(gapminder$continent)
+
+## Drop Oceania using 2 methods:
+## method 1:
+my_levels <- c("Africa", "Americas", "Asia", "Europe")
+gapminder %>% 
+  filter(continent %in% my_levels)
+
+## method 2:
+my_gap_drop_oceania <- gapminder %>% 
+  filter(continent != "Oceania")
+
+## number of rows in gapminder
+nrow(gapminder)
+## number of rows now that oceania is gone
+nrow(my_gap_drop_oceania)
+
+## remove unused factor levels:
+nlevels(my_gap_drop_oceania$continent) # still have 5 levels
+
+my_gap_drop_oceania$continent %>% 
+  fct_drop() %>% 
+  levels() # removes levels from stand-alone factor
+
+drop_oceania <- my_gap_drop_oceania %>% 
+  droplevels()
+nlevels(drop_oceania$continent) # now there are 4 levels
+```
+
+## Reorder the levels of country or continent.
+### Change order of country based on mean life expectancy:
+```{r}
+## level order for country before changing the factor level based on mean life expectancy:
+drop_oceania$country %>% 
+  levels() %>% 
+  head()
+
+## ...and now after re-ordering:
+fct_reorder(drop_oceania$country, drop_oceania$lifeExp, mean) %>% 
+  levels() %>% 
+  head()
+
+## note: fct_reorder doesn't actually change anything in the data frame...that's what arrange() does
+write_csv(drop_oceania, "drop_oceania.csv")
+drop_oceania <- read_csv("drop_oceania.csv")
+
+## test using arrange() vs. fct_reorder()
+arr_drop_oceania <- drop_oceania %>% 
+  arrange(lifeExp)
+
+arr_drop_oceania1 <- drop_oceania %>% 
+  group_by(country, continent) %>% 
+  summarise(mean_life_exp = mean(lifeExp)) %>% 
+  arrange(mean_life_exp)
+
+```
+## Apologies in advance for how long these graphs are. I don't think it's the best way to look at these data, but maybe it's the best way to look at arrange() vs. forcats?
+```{r, fig.width = 10, fig.height = 25}
+## Solely using arrange() creates a messy plot that does not mirror the order of "country" by "mean_life_exp" the new tibble created
+p1 <- ggplot(arr_drop_oceania1, aes(x = mean_life_exp, y = country)) +
+  geom_point(aes(color = continent))
+p1
+
+## Have to use reorder() to actually plot in the same order as arr_drop_oceania1, which was created using arrange().
+## I don't know why yet.
+p2 <- ggplot(arr_drop_oceania1, aes(x = mean_life_exp,
+                      y = reorder(country, mean_life_exp)))
+p2 + geom_point(aes(color = continent))
+
+## Using arrange() without grouping and summarizing first.
+p3 <- ggplot(arr_drop_oceania, aes(x = lifeExp, y = country))
+p3 + geom_point(aes(color = continent))
+
+## Using reorder() in conjunction with arrange() creates the same graph we can make more simply using forcats. See next graph.
+p4 <- ggplot(arr_drop_oceania, aes(x = lifeExp, y = reorder(country, lifeExp)))
+p4 + geom_point(aes(color = continent))
+
+
+## I wanted to play with factor levels more here --- will come back to if I have time.
+# arr_drop_oceania2 <- my_gap_drop_oceania %>% 
+#   arrange(lifeExp)
+# p6 <- ggplot(my_gap_drop_oceania, aes(x = lifeExp, y = reorder(country, lifeExp)))
+# p6 + geom_point(aes(color = continent))
+
+```
+
+### Using forcats
+```{r, fig.width = 10, fig.height = 25}
+p5 <- ggplot(drop_oceania, aes(x = lifeExp, 
+                               y = fct_reorder(drop_oceania$country, drop_oceania$lifeExp, mean)))
+p5 + geom_point(aes(color = continent))
+
+```
+
+# Experimenting further with File I/O
+```{r}
+my_gap <- gapminder
+gap_pop <- my_gap %>% 
+  group_by(country, continent) %>%
+  summarize(pop = max(pop)) %>% 
+  ungroup()
+
+gap_pop <- gap_pop %>% 
+  mutate(country = fct_reorder(country, pop))
+levels(gap_pop$country) %>% 
+  head()
+
+## I want to save the manipulations to factor level order that I made, so am saving the R object as 
+## opposed to writing it as a csv or txt file
+saveRDS(gap_pop, "gap_pop.rds")
+rm(gap_pop) # remove the object before trying to read it back in
+
+gap_pop <- readRDS("gap_pop.rds")
+levels(gap_pop$country) %>% 
+  head()
+## you can see here that the factor order survives re-entry to R
+
+## Proof of concept graph to show myself that changes by fct_reorder() translate to the figure.
+## I'm leaving it squished, so that the markdown file isn't ridiculously long.
+ggplot(gap_pop, aes(x = pop, y = country)) + geom_point(aes(color = continent)) + scale_x_log10()
+
+
+```
+
+```{r, fig.width=10, fig.height=25}
+## More playing with factors and figures
+my_gap <- gapminder
+gap_pop <- my_gap %>% 
+  group_by(country, continent, lifeExp, year) %>%
+  summarize(pop = max(pop)) %>% 
+  ungroup()
+
+gap_pop <- gap_pop %>% 
+  mutate(country = fct_reorder(country, pop))
+levels(gap_pop$country) %>% 
+  head()
+ggplot(gap_pop, aes(x = pop, y = country)) + geom_point(aes(color = year, size = lifeExp, alpha = 1/10)) + scale_x_log10()
+```
+
+# Visualization design
+```{r}
+## here is a plot I made in homework 2 looking at the relationship between life expectancy and GDP per capita
+ggplot(gapminder, aes(x = gdpPercap, y = lifeExp)) +
+  scale_x_log10() +
+  geom_point(aes(color = continent, alpha = 1/3)) +
+  geom_smooth()
+
+## let's find a better way to show these data
+## Multiply pop by -1 to order from largest to smallest. Removed Oceania because not enough data points
+new_gdp_data <- gapminder %>% 
+  filter(continent != "Oceania") %>% 
+  droplevels() %>% 
+  mutate(country = reorder(country, -1*pop, median)) %>% 
+  arrange(year, country)  
+
+test_year <- 2007
+
+new_gdp_plot <- new_gdp_data %>% 
+  filter(year == test_year)
+
+p7 <- ggplot(new_gdp_plot, aes(x = gdpPercap, y = lifeExp)) + 
+  scale_x_log10(limits = c(200, 75000))
+
+# p7 + geom_point(aes(size = pop), pch = 23)
+
+s <- p7 + geom_point(aes(size = pop), pch = 21, show.legend = FALSE) + scale_size_continuous(range = c(1,45))
+
+s <- s + facet_wrap(~continent) + ylim(c(38,100)) + aes(alpha = 1/3, fill = country) +
+  scale_fill_manual(values = country_colors)
+s
+## size of the circle is relative to population size
+```
+
+# Use ggsave()
+```{r}
+ggsave("new_gdp_plot.png", s)
+
+```
+
+# Progress report
+I struggled to remember what was going on behind the scenes with the factor reordering (i.e. what was actually changed and what wasn't, etc...). I think I have a tenuous hold on it right now. 
+
+I am still not totally clear on when to use dput() and dget().
+
+I think manipulating data visualization using ggplot seems pretty straightforward, but I wish I had more time to really explore it. I am sure that I have barely scratched the surface.
